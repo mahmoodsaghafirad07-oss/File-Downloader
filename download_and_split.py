@@ -1,6 +1,6 @@
 import os
 import sys
-import requests
+import cloudscraper
 import zipfile
 import shutil
 import time
@@ -11,9 +11,15 @@ DOWNLOAD_DIR = 'downloads'
 CHUNK_SIZE = 99 * 1024 * 1024
 FILE_SIZE_THRESHOLD = 100 * 1024 * 1024
 
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-}
+# تنظیمات scraper برای تقلید از مرورگر
+scraper = cloudscraper.create_scraper(
+    browser={
+        'browser': 'chrome',
+        'platform': 'windows',
+        'desktop': True
+    },
+    delay=10
+)
 
 def sanitize_filename(filename):
     return os.path.basename(filename)
@@ -22,7 +28,7 @@ def download_file(url, dest_path, retries=2):
     for attempt in range(retries+1):
         try:
             print(f'Downloading (attempt {attempt+1}): {url}')
-            resp = requests.get(url, stream=True, headers=HEADERS, timeout=(10, 60))
+            resp = scraper.get(url, stream=True, timeout=(10, 120))
             resp.raise_for_status()
             with open(dest_path, 'wb') as f:
                 for chunk in resp.iter_content(chunk_size=8192):
@@ -52,7 +58,7 @@ def split_file(filepath, chunk_size, output_prefix):
 
 def main():
     if not os.path.exists(LINK_FILE):
-        print(f'ERROR: {LINK_FILE} not found in current directory!')
+        print(f'ERROR: {LINK_FILE} not found!')
         sys.exit(1)
 
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
@@ -66,13 +72,6 @@ def main():
 
     for url in urls:
         print(f'\n--- Processing: {url}')
-        # چک اولیه که URL قابل دسترس باشه
-        try:
-            head_resp = requests.head(url, headers=HEADERS, timeout=10, allow_redirects=True)
-            print(f'HEAD status: {head_resp.status_code}')
-        except Exception as e:
-            print(f'HEAD request failed: {e}. Will still try GET.')
-
         parsed = urlparse(url)
         path = unquote(parsed.path)
         filename = sanitize_filename(path) if path else 'downloaded_file'
@@ -89,7 +88,6 @@ def main():
                     dest = os.path.join(DOWNLOAD_DIR, filename)
                     shutil.move(tmp_file, dest)
                     print(f'Stored directly: {dest}')
-
                 else:
                     zip_path = os.path.join('/tmp', filename + '.zip')
                     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
