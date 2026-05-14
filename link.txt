@@ -1,0 +1,2 @@
+https://s3.amazonaws.com/psiphon/web/PsiphonAndroid.apk
+https://s3.amazonaws.com/psiphon/web/psiphon3.exe
