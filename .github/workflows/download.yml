@@ -1,13 +1,13 @@
 name: Download and Split Files
 
 on:
-  workflow_dispatch:         # امکان اجرای دستی از تب Actions
+  workflow_dispatch:
   push:
     paths:
-      - 'link.txt'          # با هر تغییر در link.txt اجرا میشه
+      - 'link.txt'
 
 permissions:
-  contents: write           # دسترسی برای commit و push
+  contents: write
 
 jobs:
   download:
@@ -22,10 +22,13 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests
+        run: pip install cloudscraper
 
       - name: Run download script
         run: python download_and_split.py
+
+      - name: List downloaded files
+        run: ls -la downloads/ || echo "No files"
 
       - name: Commit and push changes
         run: |
